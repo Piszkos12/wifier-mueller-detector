@@ -19,37 +19,21 @@ volatile unsigned long lastPacketSeenMillis = 0;
 volatile bool channelLocked = false; // locked to channel when packets seen
 
 // Function to simulate a click with given force
-void IRAM_ATTR doClick(uint8_t force) { clickLength = CLICK_DURATION; }
+void IRAM_ATTR doClick() { clickLength = CLICK_DURATION; }
 
 // Callback function that will be executed when packets are received
 void IRAM_ATTR promiscuousCallback(void* buf, wifi_promiscuous_pkt_type_t type) {
     if (buf == NULL) return;
-
-    // Cast the received buffer to wifi_promiscuous_pkt_t to get RSSI
-    const wifi_promiscuous_pkt_t* packet = (wifi_promiscuous_pkt_t*)buf;
-
-    // We only process the RSSI value, ignoring all other packet data
-    int8_t rssi = packet->rx_ctrl.rssi;
-
-    // Map RSSI (dBm) to 0-100% where -100 dBm => 0% and -30 dBm => 100%
-    const int RSSI_MIN = -100;
-    const int RSSI_MAX = -30;
-    int percent = map((int)rssi, RSSI_MIN, RSSI_MAX, 0, 100);
-    percent = constrain(percent, 0, 100);
-    uint8_t packetForce = (uint8_t)percent;
 
     // Record packet time and lock to current channel while packets arrive frequently
     lastPacketSeenMillis = millis();
     channelLocked = true;
 
     // Request a click (ISR-safe)
-    doClick(packetForce);
+    doClick();
 }
 
 void setup() {
-    // Initialize Serial for debugging
-    Serial.begin(115200);
-
     // Disable Bluetooth to save power
     esp_bt_controller_disable();
 
@@ -70,8 +54,6 @@ void setup() {
     esp_wifi_set_promiscuous_rx_cb(&promiscuousCallback);
     // Ensure radio is on the starting channel
     esp_wifi_set_channel(currentChannel, WIFI_SECOND_CHAN_NONE);
-
-    Serial.println("Promiscuous mode enabled");
 }
 
 void loop() {
@@ -93,8 +75,6 @@ void loop() {
             currentChannel++;
             if (currentChannel > 13) currentChannel = 1; // channels 1..13
             esp_wifi_set_channel(currentChannel, WIFI_SECOND_CHAN_NONE);
-            // Optional: debug print (uncomment if needed)
-            // Serial.printf("Hopped to channel %d\n", currentChannel);
         }
     }
 
