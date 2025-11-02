@@ -1,25 +1,18 @@
 #include <Arduino.h>
 #include <WiFi.h>
-#include <esp_wifi.h>
-#include <esp_bt.h>
 #include <driver/rtc_io.h>
+#include <esp_bt.h>
+#include <esp_wifi.h>
 
 // Define the built-in LED pin
 const int LED_PIN = 2;  // Built-in LED on ESP32
+const unsigned int CLICK_DURATION =
+    10;  // Duration of the click in microseconds
 volatile unsigned long lastPacketTime = 0;
+volatile unsigned int clickLength = 0;
 
 // Function to simulate a click with given force
-void IRAM_ATTR doClick(uint8_t force) {
-    digitalWrite(LED_PIN, HIGH);
-    ets_delay_us(50);  // Shorter flash duration, using esp-idf delay
-    digitalWrite(LED_PIN, LOW);
-    
-    // Only print debug info if needed
-    if (force > 50) {  // Only log stronger signals
-        Serial.print("Click force: ");
-        Serial.println(force);
-    }
-}
+void IRAM_ATTR doClick(uint8_t force) { clickLength = CLICK_DURATION; }
 
 // Callback function that will be executed when packets are received
 void promiscuousCallback(void* buf, wifi_promiscuous_pkt_type_t type) {
@@ -47,10 +40,10 @@ void promiscuousCallback(void* buf, wifi_promiscuous_pkt_type_t type) {
 void setup() {
     // Initialize Serial for debugging
     Serial.begin(115200);
-    
+
     // Disable Bluetooth to save power
     esp_bt_controller_disable();
-    
+
     // Configure LED pin
     pinMode(LED_PIN, OUTPUT);
     digitalWrite(LED_PIN, LOW);  // Start with LED off
@@ -59,7 +52,7 @@ void setup() {
     WiFi.mode(WIFI_STA);
     WiFi.disconnect();
     esp_wifi_set_ps(WIFI_PS_MIN_MODEM);  // Set power save mode
-    
+
     // Wait a bit for WiFi settings to stabilize
     delay(100);
 
@@ -72,5 +65,12 @@ void setup() {
 
 void loop() {
     // Main loop will be implemented later
-    delay(10);
+    if (clickLength > 0) {
+        digitalWrite(LED_PIN, HIGH);
+        clickLength--;
+    } else {
+        digitalWrite(LED_PIN, LOW);
+    }
+
+    delayMicroseconds(1);
 }
