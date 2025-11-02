@@ -1,25 +1,26 @@
 #include <Arduino.h>
 #include <WiFi.h>
-#include <esp_wifi.h>
 #include <esp_bt.h>
+#include <esp_wifi.h>
 
-const int LED_PIN = 2;
+const int LED_PIN = 2;  // Built-in LED on many ESP32 boards
+const int SPEAKER_PIN =
+    15;  // GPIO15 - next to GND, perfect for piezo connection
 const unsigned int CLICK_DURATION = 10;
 volatile unsigned int clickLength = 0;
 
 // Channel hopping parameters
 int currentChannel = 1;
-const unsigned long HOP_NO_PACKET_MS = 1000;   // Lock timeout
-const unsigned long HOP_INTERVAL_MS = 200;     // Hop interval
+const unsigned long HOP_NO_PACKET_MS = 1000;  // Lock timeout
+const unsigned long HOP_INTERVAL_MS = 200;    // Hop interval
 unsigned long lastHopMillis = 0;
 volatile unsigned long lastPacketSeenMillis = 0;
 volatile bool channelLocked = false;
 
-void IRAM_ATTR doClick() { 
-    clickLength = CLICK_DURATION; 
-}
+void IRAM_ATTR doClick() { clickLength = CLICK_DURATION; }
 
-void IRAM_ATTR promiscuousCallback(void* buf, wifi_promiscuous_pkt_type_t type) {
+void IRAM_ATTR promiscuousCallback(void* buf,
+                                   wifi_promiscuous_pkt_type_t type) {
     lastPacketSeenMillis = millis();
     channelLocked = true;
     doClick();
@@ -28,7 +29,8 @@ void IRAM_ATTR promiscuousCallback(void* buf, wifi_promiscuous_pkt_type_t type) 
 void setup() {
     esp_bt_controller_disable();
     pinMode(LED_PIN, OUTPUT);
-    
+    pinMode(SPEAKER_PIN, OUTPUT);
+
     WiFi.mode(WIFI_STA);
     WiFi.disconnect();
     esp_wifi_set_ps(WIFI_PS_MIN_MODEM);
@@ -57,10 +59,12 @@ void loop() {
 
     if (clickLength > 0) {
         digitalWrite(LED_PIN, HIGH);
+        digitalWrite(SPEAKER_PIN, HIGH);
         clickLength--;
     } else {
         digitalWrite(LED_PIN, LOW);
+        digitalWrite(SPEAKER_PIN, LOW);
     }
 
-    delayMicroseconds(1);
+    delayMicroseconds(100);
 }
