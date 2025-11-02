@@ -13,7 +13,7 @@ This hobby project simulates a Geiger-Müller counter's behavior but detects WiF
 
 ```
 ESP32 GPIO15 ----[1kΩ]---- Piezo(+)
-ESP32 GND    -------------- Piezo(-)
+ESP32 GND    ------------- Piezo(-)
 ```
 
 The piezo speaker is connected to GPIO15 (chosen for its convenient location next to GND) through a 1kΩ current-limiting resistor.
